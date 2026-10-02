@@ -1,0 +1,1 @@
+export const STAGES = ['new', 'contacted', 'qualified', 'application', 'won', 'lost'];

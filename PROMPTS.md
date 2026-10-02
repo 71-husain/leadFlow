@@ -10,5 +10,13 @@
 
 6. completed the seed.js file and understood it completely and check it and yes it created the mock users so now its time to test all the apis for authentication for different user so provide the testing parameter for them and i will be testing them on thunder client 
 
-7. tested all the 8 test cases and all have been passed so word for day1 is completed so let me add all files to git and make appropriate commit then will push the project to github so where i can or anyone can track it 
+7. tested all the 8 test cases and all have been passed so work for day1 is completed so let me add all files to git and make appropriate commit then will push the project to github so where i can or anyone can track it 
+
+8. Provide basic schema structure for the Lead that includes the fields like name,email,phone,source,stage,version ,advisor he got assigned ,if is duplicate entry ,and add hooks and pre functions to convert the data into suitable format that we need to process the lead in later or earlier stages 
+
+9.write a function to identify the existing person using brokerage_id , email or phone so that we can identify the incoming lead request is already an previous contacted person 
+
+10. now everything is upto correct position till now and want to understand next steps and decisions that i need to take to handle the lead so provide the roadmap first so i can understand the flow for upcoming decisions and steps then will start taking business decisions to handle the logic 
+
+11. I did not understood that webhookController logic mainly that tally pipleline logics so can you explain them with core business decision that we are taking and also first explain the web hook concepts to me then code with each function work
 
