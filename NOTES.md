@@ -1,3 +1,5 @@
 Design decision: a duplicate is flagged, not rejected (duplicateOf points to the earlier lead). An advisor should see "this person already contacted us" instead of silently losing the new enquiry. Later we can also check clients.
 
 2. webhookController : This is a Tally webhook controller that receives lead submissions. First it identifies the active brokerage and verifies Tally's HMAC signature using the brokerage-specific secret. Then it filters the event type, extracts and validates the lead information, normalizes the phone number, and checks whether the person already exists. It creates the lead while marking any existing person as a duplicate instead of rejecting it. Finally, a unique database constraint protects against duplicate webhook deliveries, and a duplicate-key error is acknowledged safely
+
+3. idempotency via a unique index (race-safe), duplicates are flagged and not rejected, and the webhook rate limit is per brokerage.
