@@ -11,9 +11,11 @@ import morgan from 'morgan';
 import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
+import leadRoutes from './routes/leadRoutes.js';
 
 const app = express();
 
+//middlewares
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
@@ -25,15 +27,21 @@ app.use(express.json({
   })
 );
 
+//routes
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks',webhookRoutes);
+app.use('/api/leads',leadRoutes);
 
 //central error handler
 app.use((err, req, res, next) => {
+  if(err.status){
+    return res.status(err.status).json({message : err.message,...err.extra});
+  }
   console.error(err);
   res.status(500).json({ message: 'Something went wrong' });
 });
