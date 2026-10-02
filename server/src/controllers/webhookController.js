@@ -51,7 +51,7 @@ export const receiveTallyLead = async (req, res) => {
       phone, 
       phoneNormalized,
       source: 'tally',
-      externalId,
+      externalId,  
       duplicateOf: existing ? existing._id : null,
       rawPayload: payload,
     });
