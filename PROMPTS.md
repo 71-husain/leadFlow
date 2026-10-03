@@ -46,3 +46,75 @@ npm error A complete log of this run can be found in: C:\Users\dell\AppData\Loca
 19. i tested all the test cases and all have been passed and the answer of problems are these -> first when lead arrived with version 0 at that time or alpha admin staged it and moved to connected so the version changes to 1 and then again when send same patch request then at that time system found that the request version i.e. 0 mismatch the current version i.e. 1 so it understood that someone already handle this lead so it sent the conflict status code 409 with the advisor who handle that lead , and second when send the get request with alpha lead _id in params and it has token of beta lead ( beta login) that makes inconsistency in authentication like being the beta user trying to access alpha data so system finds it and sent 404 error of lead not found
 
 20. this steps looks complex to me as i dont know anything about the tally so tell me in details that what actually i need to do to connect the real tally form with step by step guidance 
+
+21. $    cloudflared tunnel --url http://localhost:5000
+bash: cloudflared: command not found
+
+22. dell@DESKTOP-8VF819M MINGW64 ~/Desktop/leadflow (main)
+$ cd ../
+
+dell@DESKTOP-8VF819M MINGW64 ~/Desktop
+$    cd /c/Users/dell/Desktop
+   ./cloudflared-windows-amd64.exe tunnel --url http://localhost:5000
+bash: ./cloudflared-windows-amd64.exe: No such file or directory
+
+dell@DESKTOP-8VF819M MINGW64 ~/Desktop
+$    ./cloudflared-windows-amd64.exe tunnel --url http://localhost:5000
+bash: ./cloudflared-windows-amd64.exe: No such file or directory
+
+dell@DESKTOP-8VF819M MINGW64 ~/Desktop
+$
+
+23. terminal  is stucked there ,
+    $    ./cloudflared-windows-amd64.exe tunnel --url http://localhost:5000
+2026-10-03T06:49:49Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-10-03T06:49:49Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-10-03T06:49:55Z INF +--------------------------------------------------------------------------------------------+
+2026-10-03T06:49:55Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-10-03T06:49:55Z INF |  https://recording-facilities-liked-fallen.trycloudflare.com                               |
+2026-10-03T06:49:55Z INF +--------------------------------------------------------------------------------------------+
+2026-10-03T06:49:55Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-10-03T06:49:55Z INF Version 2026.9.3 (Checksum f096265ec2fcbe9bb6e2d64268db167ced3fcbb83d894bdb9e2fcdb26f2ea7e2)
+2026-10-03T06:49:55Z INF GOOS: windows, GOVersion: go1.26.8, GoArch: amd64
+2026-10-03T06:49:55Z INF Settings: map[ha-connections:1 protocol:quic url:http://localhost:5000]
+2026-10-03T06:49:55Z INF cloudflared will not automatically update on Windows systems.
+2026-10-03T06:49:55Z INF Generated Connector ID: 3bfdf07c-408a-4f5a-ad68-b41e48849ff0
+2026-10-03T06:49:55Z INF Initial protocol quic
+2026-10-03T06:49:55Z INF ICMP proxy will use 192.168.0.104 as source for IPv4
+2026-10-03T06:49:55Z INF ICMP proxy will use fe80::c3f7:decd:986f:8c44 in zone Wi-Fi 2 as source for IPv6
+2026-10-03T06:49:55Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-10-03T06:49:55Z INF ICMP proxy will use 192.168.0.104 as source for IPv4
+2026-10-03T06:49:55Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.43
+2026-10-03T06:49:55Z INF ICMP proxy will use fe80::c3f7:decd:986f:8c44 in zone Wi-Fi 2 as source for IPv6
+2026-10-03T06:49:55Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-10-03T06:49:55Z INF +-------------------------------------------------------------------------------------+
+2026-10-03T06:49:55Z INF |                               CONNECTIVITY PRE-CHECKS                               |
+2026-10-03T06:49:55Z INF +-------------------------------------------------------------------------------------+
+2026-10-03T06:49:55Z INF |  COMPONENT         TARGET                     STATUS  DETAILS                       |
+2026-10-03T06:49:55Z INF |  DNS Resolution    region1.v2.argotunnel.com  PASS    DNS Resolved successfully     |
+2026-10-03T06:49:55Z INF |  DNS Resolution    region2.v2.argotunnel.com  PASS    DNS Resolved successfully     |
+2026-10-03T06:49:55Z INF |  UDP Connectivity  region1.v2.argotunnel.com  PASS    QUIC connection successful    |
+2026-10-03T06:49:55Z INF |  UDP Connectivity  region2.v2.argotunnel.com  PASS    QUIC connection successful    |
+2026-10-03T06:49:55Z INF |  TCP Connectivity  region1.v2.argotunnel.com  PASS    HTTP/2 connection successful  |
+2026-10-03T06:49:55Z INF |  TCP Connectivity  region2.v2.argotunnel.com  PASS    HTTP/2 connection successful  |
+2026-10-03T06:49:55Z INF |  Cloudflare API    api.cloudflare.com:443     PASS    API is reachable              |
+2026-10-03T06:49:55Z INF |                                                                                     |
+2026-10-03T06:49:55Z INF |  SUMMARY: Environment is healthy. cloudflared will use 'quic' as primary protocol.  |
+2026-10-03T06:49:55Z INF +-------------------------------------------------------------------------------------+
+2026-10-03T06:49:55Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=region1.v2.argotunnel.com
+2026-10-03T06:49:55Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=region2.v2.argotunnel.com
+2026-10-03T06:49:55Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=region1.v2.argotunnel.com
+2026-10-03T06:49:55Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=region2.v2.argotunnel.com
+2026-10-03T06:49:55Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=region1.v2.argotunnel.com
+2026-10-03T06:49:55Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=region2.v2.argotunnel.com
+2026-10-03T06:49:55Z INF precheck component="Cloudflare API" details="API is reachable" run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 status=pass target=api.cloudflare.com:443
+2026-10-03T06:49:55Z INF precheck complete hard_fail=false run_id=3f431ce9-55bb-4d3e-b77b-127792d022f3 suggested_protocol=quic
+2026-10-03T06:49:56Z INF Registered tunnel connection connIndex=0 connection=6f231dfa-b990-44f4-b440-52daf1072359 event=0 ip=198.41.200.43 location=bom10 protocol=quic
+
+24. could not see any upcomin g request to server terminal instead can see this to the cloudflare terminal , 40-52daf1072359 event=0 ip=198.41.200.43 location=bom10 protocol=quic
+2026-10-03T06:55:00Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+
+25. worked and request went successfull and yes i can see the new lead with my name in the database , GET /favicon.ico 404 0.954 ms - 150
+POST /api/webhooks/tally/alpha 201 1924.558 ms - 52
+
+26. as of now we have a system where 4 types of user exists and system is isolated complety based on brokerages then leads can come from the webhooks like tally form etc and then system detects leads and advisor can update the stage that will change the version that avoids conflicts between advisor and also tested real tally form data using webhook so now systems backend is working fine and for the real time communication we need socket.io that immediately inform all advisor as new leads come and also when stage changes means real time notification so let try to implement it but before that i want to inform that i have never worked with the socket.io before so first explain that concept to me then will move forward 

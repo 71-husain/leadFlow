@@ -21,6 +21,6 @@ export const moveStage = async (req, res) => {
   const parsed = moveSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: 'Invalid stage or version' });
 
-  const lead = await leadService.moveLeadStage(req.user.brokerageId, req.params.id, parsed.data);
+  const lead = await leadService.moveLeadStage(req.user.brokerageId, req.params.id, parsed.data , req.user);
   res.json({ lead });
 };

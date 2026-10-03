@@ -12,3 +12,16 @@ Webhook rate limit is per brokerage.
 Platform admin is a seed script, not a UI.
 
 5. stage moves use optimistic concurrency (a version field with an atomic conditional update). A conflicting move returns 409 plus the current lead so the UI can refresh. Chosen over locking because it needs no waiting and works with several servers. Another brokerage's lead id returns 404, not 403, so its existence isn't revealed.
+
+6. Tally is the lead source (free signed webhooks). Each brokerage has its own endpoint and secret, verified with HMAC. Limitation: only Tally is supported. Tested with a local tunnel; on deployment the tunnel isn't needed.
+
+7. Business decisions in c) and d):
+
+We broadcast only after the database write succeeds. If we announced first and the save failed, every screen would show something that never happened.
+movedBy is included because the brief complains that advisors "cannot see who is handling what". Now every screen can show "Ravi moved Anna to Contacted".
+The mover's own screen gets the event too. That's fine, because applying the same update twice does nothing harmful, and it keeps all screens consistent with one rule.
+No rawPayload in broadcasts, since it holds the form's raw data and nobody needs it on the board.
+
+8. Live updates use Socket.IO. JWT is verified at connection, and rooms are assigned by the server (brokerage:<id>), so a client cannot join a room of another brokerage.
+Events are broadcast only after the database write succeeds. The database is the source of truth; clients refetch on reconnect, so missed events are recovered.
+Limitation: it works with a single server instance. Several instances would need the Socket.IO Redis adapter, which I'd add if scaling. The JWT is checked at connect time only.
