@@ -28,3 +28,21 @@
 
 15. i did not understood that sendTestLead.js code that yyou provided so can you explain them and why did we put it into the script folder 
 
+16. $ npm run dev
+npm error code ENOENT
+npm error syscall open
+npm error path C:\Users\dell\Desktop\leadflow\package.json
+npm error errno -4058
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open 'C:\Users\dell\Desktop\leadflow\package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: C:\Users\dell\AppData\Local\npm-cache\_logs\2026-10-02T10_59_56_357Z-debug-0.log 
+
+
+17. now i have mock leads so let write controller or service code for leads where we should write functions to get the leads from the tally either bulk or single lead and also update the stage movement so that multiple advisor does not make conflict in single lead 
+
+18. setup the leadRoutes with controller and services and also connected it in the index.js so now its time to test the apis that we created for leads like get leads , update stage etc so write the test cases with all parameter to test using thunder client 
+
+19. i tested all the test cases and all have been passed and the answer of problems are these -> first when lead arrived with version 0 at that time or alpha admin staged it and moved to connected so the version changes to 1 and then again when send same patch request then at that time system found that the request version i.e. 0 mismatch the current version i.e. 1 so it understood that someone already handle this lead so it sent the conflict status code 409 with the advisor who handle that lead , and second when send the get request with alpha lead _id in params and it has token of beta lead ( beta login) that makes inconsistency in authentication like being the beta user trying to access alpha data so system finds it and sent 404 error of lead not found
+
+20. this steps looks complex to me as i dont know anything about the tally so tell me in details that what actually i need to do to connect the real tally form with step by step guidance 
