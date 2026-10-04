@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
-import Login from './Login.jsx';
-import Board from './Board.jsx';
-import { getUser, clearSession } from './api.js';
+import { useCallback, useState } from "react";
+import Login from "./Login.jsx";
+import Board from "./Board.jsx";
+import { getUser, clearSession } from "./api.js";
+import ClientPortal from "./ClientPortal.jsx";
 
 export default function App() {
   const [user, setUser] = useState(getUser());
@@ -14,19 +15,25 @@ export default function App() {
 
   if (!user) return <Login onLogin={setUser} />;
 
-  const isStaff = ['brokerage_admin', 'advisor'].includes(user.role);
+  const isStaff = ["brokerage_admin", "advisor"].includes(user.role);
 
   return (
     <div className="app">
       <header>
         <strong>LeadFlow</strong>
-        <span>{user.name} ({user.role.replace('_', ' ')})</span>
+        <span>
+          {user.name} ({user.role.replace("_", " ")})
+        </span>
         <button onClick={logout}>Log out</button>
       </header>
       {isStaff ? (
         <Board user={user} onLogout={logout} />
+      ) : user.role === "client" ? (
+        <ClientPortal onLogout={logout} />
       ) : (
-        <p className="empty">The {user.role.replace('_', ' ')} area is not built yet.</p>
+        <p className="empty">
+          The {user.role.replace("_", " ")} area is not built yet.
+        </p>
       )}
     </div>
   );

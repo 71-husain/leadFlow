@@ -1,24 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
-import { api, API, getToken } from './api.js';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
+import { api, API, getToken } from "./api.js";
 
-const STAGES = ['new', 'contacted', 'qualified', 'application', 'won', 'lost'];
+const STAGES = ["new", "contacted", "qualified", "application", "won", "lost"];
 const LABELS = {
-  new: 'New', contacted: 'Contacted', qualified: 'Qualified',
-  application: 'Application', won: 'Won', lost: 'Lost',
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  application: "Application",
+  won: "Won",
+  lost: "Lost",
 };
 
 export default function Board({ user, onLogout }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState('connecting');
-  const [toast, setToast] = useState('');
+  const [status, setStatus] = useState("connecting");
+  const [toast, setToast] = useState("");
+  const [credentials, setCredentials] = useState(null);
   const toastTimer = useRef();
 
   const notify = (message) => {
     setToast(message);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 4000);
+    toastTimer.current = setTimeout(() => setToast(""), 4000);
   };
 
   // Insert or replace a lead, but never let an OLDER version overwrite a newer one
@@ -35,11 +40,11 @@ export default function Board({ user, onLogout }) {
 
   const load = useCallback(async () => {
     try {
-      const { leads } = await api('/leads');
+      const { leads } = await api("/leads");
       setLeads(leads);
     } catch (err) {
       if (err.status === 401) onLogout();
-      else notify('Could not load leads');
+      else notify("Could not load leads");
     } finally {
       setLoading(false);
     }
@@ -49,25 +54,28 @@ export default function Board({ user, onLogout }) {
     load();
 
     const socket = io(API, { auth: { token: getToken() } });
-    socket.on('connect', () => setStatus('live'));
-    socket.on('disconnect', () => setStatus('offline'));
-    socket.on('connect_error', (err) => {
-      setStatus('offline');
-      if (err.message === 'Not authenticated') onLogout();
+    socket.on("connect", () => setStatus("live"));
+    socket.on("disconnect", () => setStatus("offline"));
+    socket.on("connect_error", (err) => {
+      setStatus("offline");
+      if (err.message === "Not authenticated") onLogout();
     });
     // After a dropped connection comes back, events sent in the gap are lost, so refetch
-    socket.io.on('reconnect', load);
+    socket.io.on("reconnect", load);
 
-    socket.on('lead:created', ({ lead }) => {
+    socket.on("lead:created", ({ lead }) => {
       upsert(lead);
       notify(`New lead: ${lead.name}`);
     });
-    socket.on('lead:moved', ({ lead, movedBy }) => {
+
+    socket.on("lead:moved", ({ lead, movedBy }) => {
       upsert(lead);
       if (movedBy && movedBy.id !== user.id) {
         notify(`${movedBy.name} moved ${lead.name} to ${LABELS[lead.stage]}`);
       }
     });
+
+    socket.on("lead:updated", ({ lead }) => upsert(lead)); // e.g. someone converted a lead
 
     return () => socket.disconnect();
   }, [load, upsert, onLogout, user.id]);
@@ -77,18 +85,20 @@ export default function Board({ user, onLogout }) {
     if (!lead || lead.stage === stage) return;
 
     // Optimistic: show the move immediately, then let the server confirm or correct it
-    setLeads((prev) => prev.map((l) => (l._id === leadId ? { ...l, stage } : l)));
+    setLeads((prev) =>
+      prev.map((l) => (l._id === leadId ? { ...l, stage } : l)),
+    );
 
     try {
       const { lead: saved } = await api(`/leads/${leadId}/stage`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: { stage, version: lead.version },
       });
       upsert(saved);
     } catch (err) {
       if (err.status === 409 && err.data?.lead) {
         upsert(err.data.lead); // snap the card to where it really is
-        notify('Someone else just changed this lead. Board refreshed.');
+        notify("Someone else just changed this lead. Board refreshed.");
       } else {
         notify(err.message);
         load();
@@ -96,14 +106,38 @@ export default function Board({ user, onLogout }) {
     }
   };
 
+  const convert = async (lead) => {
+    try {
+      const { lead: updated, credentials } = await api(
+        `/leads/${lead._id}/convert`,
+        { method: "POST" },
+      );
+      upsert(updated);
+      setCredentials(credentials); // shown once; the server never stores or returns it again
+    } catch (err) {
+      notify(err.message);
+    }
+  };
   if (loading) return <p className="empty">Loading...</p>;
 
   return (
     <>
       <div className="status">
-        <span className={`dot ${status}`} /> {status === 'live' ? 'Live' : status}
+        <span className={`dot ${status}`} />{" "}
+        {status === "live" ? "Live" : status}
       </div>
       {toast && <div className="toast">{toast}</div>}
+
+      {credentials && (
+        <div className="credentials">
+          <strong>
+            Client login created. Share it now, it will not be shown again.
+          </strong>
+          <div>Email: {credentials.email}</div>
+          <div>Temporary password: {credentials.temporaryPassword}</div>
+          <button onClick={() => setCredentials(null)}>Done</button>
+        </div>
+      )}
 
       <div className="board">
         {STAGES.map((stage) => {
@@ -115,21 +149,37 @@ export default function Board({ user, onLogout }) {
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                moveLead(e.dataTransfer.getData('text/plain'), stage);
+                moveLead(e.dataTransfer.getData("text/plain"), stage);
               }}
             >
-              <h3>{LABELS[stage]} <span>{items.length}</span></h3>
+              <h3>
+                {LABELS[stage]} <span>{items.length}</span>
+              </h3>
               {items.map((lead) => (
                 <div
                   key={lead._id}
                   className="card"
                   draggable
-                  onDragStart={(e) => e.dataTransfer.setData('text/plain', lead._id)}
+                  onDragStart={(e) =>
+                    e.dataTransfer.setData("text/plain", lead._id)
+                  }
                 >
                   <strong>{lead.name}</strong>
                   <div>{lead.email}</div>
                   <div>{lead.phone}</div>
-                  {lead.duplicateOf && <span className="badge">Known contact</span>}
+                  {lead.duplicateOf && (
+                    <span className="badge">Known contact</span>
+                  )}
+
+                  {lead.clientUserId ? (
+                    <span className="badge client">Client</span>
+                  ) : (
+                    lead.email && (
+                      <button className="small" onClick={() => convert(lead)}>
+                        Convert to client
+                      </button>
+                    )
+                  )}
                 </div>
               ))}
             </div>

@@ -16,3 +16,17 @@ header span { margin-left: auto; color: #555; }
 .column h3 { margin: 0 0 10px; font-size: 14px; display: flex; justify-content: space-between; }
 .card { background: #fff; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
 .badge { display: inline-block; margin-top: 6px; background: #fff3cd; color: #7a5b00; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+.portal { max-width: 640px; margin: 24px auto; padding: 0 16px; }
+.upload { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 8px; }
+.note { color: #555; margin: 4px 0 12px; }
+.doc { display: flex; gap: 12px; align-items: center; background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+.doc span:first-child { flex: 1; }
+.pill { padding: 2px 10px; border-radius: 10px; font-size: 12px; background: #ddd; }
+.pill.pending { background: #ffe9a8; }
+.pill.checking { background: #cfe4ff; }
+.pill.verified { background: #c9f2d3; }
+.pill.failed { background: #ffd0d0; }
+.credentials { margin: 0 20px 12px; padding: 12px; background: #fff8e1; border: 1px solid #f0d78c; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
+button.small { margin-top: 6px; padding: 4px 8px; font-size: 12px; }
+.badge.client { background: #d6ecff; color: #0b4f8a; }

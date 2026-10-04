@@ -11,23 +11,37 @@ export const clearSession = () => {
   localStorage.removeItem('user');
 };
 
-// One place that talks to the backend: adds the token, and turns errors into exceptions
 export async function api(path, { method = 'GET', body } = {}) {
   const token = getToken();
+  const isForm = body instanceof FormData; // file uploads must NOT be sent as JSON
   const res = await fetch(`${API}/api${path}`, {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!isForm && { 'Content-Type': 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: isForm ? body : body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.message || 'Request failed');
     err.status = res.status;
-    err.data = data; // keeps the 409 response, which contains the current lead
+    err.data = data;
     throw err;
   }
   return data;
+}
+
+// Files need the login token, so we can't use a plain link. Fetch it, then save it.
+export async function downloadFile(docId, filename) {
+  const res = await fetch(`${API}/api/documents/${docId}/file`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) throw new Error('Download failed');
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
