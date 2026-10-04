@@ -25,3 +25,8 @@ No rawPayload in broadcasts, since it holds the form's raw data and nobody needs
 8. Live updates use Socket.IO. JWT is verified at connection, and rooms are assigned by the server (brokerage:<id>), so a client cannot join a room of another brokerage.
 Events are broadcast only after the database write succeeds. The database is the source of truth; clients refetch on reconnect, so missed events are recovered.
 Limitation: it works with a single server instance. Several instances would need the Socket.IO Redis adapter, which I'd add if scaling. The JWT is checked at connect time only.
+
+9. Frontend is React (Vite) with no router or UI library, to keep it small. Native HTML5 drag and drop is used.
+Optimistic UI with server correction; a version check in the client prevents stale updates from overwriting newer ones; the board refetches after a socket reconnect.
+Token is kept in localStorage (known XSS trade-off; httpOnly cookies would be safer).
+Limitations: native drag and drop doesn't work on touch screens; the list is capped at 200 leads with no pagination yet; the client and platform admin screens are placeholders.

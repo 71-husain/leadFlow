@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; color: #1a1a1a; }
+header { display: flex; gap: 16px; align-items: center; padding: 12px 20px; background: #fff; border-bottom: 1px solid #ddd; }
+header span { margin-left: auto; color: #555; }
+.empty { padding: 24px; }
+.login { max-width: 320px; margin: 80px auto; display: flex; flex-direction: column; gap: 10px; }
+.login input, button { padding: 10px; font-size: 14px; }
+.error { color: #c0392b; margin: 0; }
+.status { padding: 10px 20px; font-size: 13px; color: #555; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #aaa; margin-right: 4px; }
+.dot.live { background: #2ecc71; }
+.dot.offline { background: #e74c3c; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: #222; color: #fff; padding: 12px 16px; border-radius: 8px; z-index: 10; }
+.board { display: flex; gap: 12px; padding: 0 20px 20px; overflow-x: auto; align-items: flex-start; }
+.column { background: #e9ebef; border-radius: 8px; min-width: 240px; width: 240px; padding: 10px; min-height: 200px; }
+.column h3 { margin: 0 0 10px; font-size: 14px; display: flex; justify-content: space-between; }
+.card { background: #fff; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.badge { display: inline-block; margin-top: 6px; background: #fff3cd; color: #7a5b00; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
