@@ -123,3 +123,6 @@ POST /api/webhooks/tally/alpha 201 1924.558 ms - 52
 
 28. so the backend has completed for the current targeted work and will complete the frontend of that tasks first then if still get time then can include one or two more work to the project so define the structure and workflow for the frontend 
 
+29. in test 5 , after reconnecting the data should be refetched because we are showing live updates and if will wait for next event then the happened event will not be shown to the next event and we dont know when will the next event happen so that basically lead to delay information to live screen thats why we are refetching after reconnect ,  in upsert if we do not check that incoming.version < prev[i].version condition then it can overwrite the prev data even if the prev data is more updated or recent
+
+30. well all the test cases passed as expected except some minor work that was first toast message like when i am dragging the lead from one  stage to another then toast message does not come to screen and second when i set network to offline then screen does not show the red dot but works properly

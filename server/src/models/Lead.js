@@ -13,6 +13,7 @@ const leadSchema = new mongoose.Schema(
     stage: { type: String, enum: STAGES, default: 'new', index: true },
     version: { type: Number, default: 0 },         // used for safe concurrent moves in Step 4
     assignedAdvisorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    clientUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     duplicateOf: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null },
     rawPayload: { type: mongoose.Schema.Types.Mixed },
   },
@@ -28,5 +29,7 @@ leadSchema.index(
 );
 // Fast duplicate-person lookups
 leadSchema.index({ brokerageId: 1, email: 1 });
+
+leadSchema.index({ brokerageId: 1, clientUserId: 1 });
 
 export default mongoose.model('Lead', leadSchema);

@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { STAGES } from '../utils/constants.js';
 import * as leadService from '../services/leadService.js';
+import * as clientService from '../services/clientService.js';
+
 
 const moveSchema = z.object({
   stage: z.enum(STAGES),
@@ -23,4 +25,9 @@ export const moveStage = async (req, res) => {
 
   const lead = await leadService.moveLeadStage(req.user.brokerageId, req.params.id, parsed.data , req.user);
   res.json({ lead });
+};
+
+export const convert = async (req, res) => {
+  const result = await clientService.convertLeadToClient(req.user.brokerageId, req.params.id);
+  res.status(201).json(result);
 };
