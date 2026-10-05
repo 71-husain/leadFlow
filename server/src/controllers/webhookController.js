@@ -3,6 +3,7 @@ import Brokerage from "../models/Brokerage.js";
 import Lead from "../models/Lead.js";
 import { findExistingPerson, normalizePhone } from "../services/leadService.js";
 import { emitToBrokerage, emitToUser } from "../sockets/index.js";
+import { touchDashboard } from "../services/dashboardService.js";
 
 const verifySignature = (rawBody, signature, secret) => {
   if (!rawBody || !signature) return false;
@@ -76,6 +77,7 @@ export const receiveTallyLead = async (req, res) => {
       rawPayload: payload,
     });
 
+    touchDashboard(brokerage._id)
     const { rawPayload, ...leadData } = lead.toObject(); // never broadcast the raw payload
     emitToBrokerage(brokerage._id, "lead:created", { lead: leadData });
     return res

@@ -3,12 +3,14 @@ import Document from '../models/Document.js';
 import { createRedis } from '../config/redis.js';
 import { DOCUMENT_QUEUE } from './documentQueue.js';
 import { emitToBrokerage, emitToUser } from '../sockets/index.js';
+import { touchDashboard } from '../services/dashboardService.js';
 
 const FAIL_RATE = Number(process.env.CHECK_FAIL_RATE ?? 0.3);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Tell the advisors of this brokerage and the owning client, live
 const publish = (doc) => {
+  touchDashboard(doc.brokerageId.toString());
   const payload = { document: doc.toJSON() };
   emitToBrokerage(doc.brokerageId.toString(), 'document:updated', payload);
   emitToUser(doc.clientUserId.toString(), 'document:updated', payload);

@@ -6,6 +6,7 @@ import User from '../models/User.js';
 import HttpError from '../utils/HttpError.js';
 import { getLead } from './leadService.js';
 import { emitToBrokerage } from '../sockets/index.js';
+import { touchDashboard } from './dashboardService.js';
 
 export const convertLeadToClient = async (brokerageId, leadId) => {
   const lead = await getLead(brokerageId, leadId); // 404 for unknown or other brokerages' ids
@@ -43,5 +44,6 @@ export const convertLeadToClient = async (brokerageId, leadId) => {
   }
 
   emitToBrokerage(brokerageId, 'lead:updated', { lead: updated.toJSON() });
+  touchDashboard(brokerageId);
   return { lead: updated, credentials: { email: lead.email, temporaryPassword } };
 };

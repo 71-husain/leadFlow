@@ -18,6 +18,7 @@ import portalRoutes from "./routes/portalRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import { startDocumentWorker } from './queues/documentWorker.js';
 import { startRecoverySweep } from './queues/recoverySweep.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use("/api/webhooks", webhookRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/me", portalRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/dashboard",dashboardRoutes);
 
 //central error handler
 app.use((err, req, res, next) => {
@@ -67,7 +69,7 @@ app.use((err, req, res, next) => {
 const start = async () => {
   await mongoose.connect(process.env.MONGO_URI);
   console.log("MongoDB connected");
-  
+
   const httpServer = http.createServer(app);
 
   initSocket(httpServer);

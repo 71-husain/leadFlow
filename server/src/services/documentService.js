@@ -4,6 +4,7 @@ import HttpError from "../utils/HttpError.js";
 import { saveFile } from "./storage.js";
 import { emitToBrokerage, emitToUser } from "../sockets/index.js";
 import { enqueueDocumentCheck } from "../queues/documentQueue.js";
+import { touchDashboard } from "./dashboardService.js";
 
 const MAX_DOCS_PER_CASE = 50;
 
@@ -44,6 +45,8 @@ export const uploadDocument = async (user, { file, type }) => {
     size: file.size,
     fileId,
   });
+
+  touchDashboard(user.brokerageId);
 
   try {
     await enqueueDocumentCheck(doc);

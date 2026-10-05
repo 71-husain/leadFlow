@@ -41,3 +41,5 @@ Downloading (downloadFile): the browser never gets a public link. Every download
 
 React side (api.js, ClientPortal.jsx): FormData is the browser's way to package a file plus text fields. We send the token with each request, and for downloads we fetch the file with the token and then save it, because a normal link can't carry the login header.
 
+
+document status changes are pushed live to the owning client and to the brokerage's staff only. Out-of-order events are ignored using updatedAt, and the screens refetch on reconnect. Redis Cloud's eviction policy is volatile-lru (BullMQ recommends noeviction); the recovery sweep limits the impact. Known limitation: no pagination of documents in the panel.

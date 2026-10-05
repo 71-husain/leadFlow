@@ -2,6 +2,7 @@ import Lead from "../models/Lead.js";
 import mongoose from "mongoose";
 import HttpError from "../utils/HttpError.js";
 import { emitToBrokerage } from "../sockets/index.js";
+import { touchDashboard } from "./dashboardService.js";
 
 export const normalizePhone = (phone) =>
   phone ? phone.replace(/[^\d+]/g, "") : undefined;
@@ -57,6 +58,8 @@ export const moveLeadStage = async (
       lead: updated.toJSON(),
       movedBy: actor ? { id: actor.id, name: actor.name } : null,
     });
+
+    touchDashboard(brokerageId);
     return updated;
   }
   // No match: either it doesn't exist (for this brokerage) or someone changed it first

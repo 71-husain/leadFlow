@@ -7,3 +7,6 @@ export const createRedis = () => {
   connection.on('error', (err) => console.error('Redis error:', err.message));
   return connection;
 };
+
+let shared;
+export const getRedis = () => (shared ||= createRedis()); // one connection reused for caching

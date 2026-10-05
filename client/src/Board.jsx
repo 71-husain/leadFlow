@@ -3,16 +3,8 @@ import { io } from "socket.io-client";
 import { api, API, getToken } from "./api.js";
 import { upsertDoc } from "./docs.js";
 import DocRow from "./docRow.jsx";
-
-const STAGES = ["new", "contacted", "qualified", "application", "won", "lost"];
-const LABELS = {
-  new: "New",
-  contacted: "Contacted",
-  qualified: "Qualified",
-  application: "Application",
-  won: "Won",
-  lost: "Lost",
-};
+import { STAGES , LABELS } from "./constants.js";
+import Dashboard from './Dashboard.jsx';
 
 export default function Board({ user, onLogout }) {
   const [leads, setLeads] = useState([]);
@@ -24,6 +16,7 @@ export default function Board({ user, onLogout }) {
   const [selected, setSelected] = useState(null); // id of the lead whose panel is open
   const [docs, setDocs] = useState([]);
   const selectedRef = useRef(null); // lets the socket handlers see the current selection
+  const [dashTick, setDashTick] = useState(0);
 
   const notify = (message) => {
     setToast(message);
@@ -95,6 +88,8 @@ export default function Board({ user, onLogout }) {
     socket.on("document:created", onDoc);
     socket.on("document:updated", onDoc);
 
+    socket.on('dashboard:changed', () => setDashTick((t) => t + 1));
+
     return () => socket.disconnect();
   }, [load, upsert, onLogout, user.id]);
 
@@ -161,6 +156,7 @@ export default function Board({ user, onLogout }) {
 
   return (
     <>
+      <Dashboard tick={dashTick} />
       <div className="status">
         <span className={`dot ${status}`} />{" "}
         {status === "live" ? "Live" : status}
