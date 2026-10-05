@@ -26,7 +26,7 @@ export const convertLeadToClient = async (brokerageId, leadId) => {
       updated = await Lead.findOneAndUpdate(
         { _id: lead._id, brokerageId, clientUserId: null },
         { $set: { clientUserId }, $inc: { version: 1 } },
-        { new: true, session }
+        { returnDocument: 'after', session }
       ).select('-rawPayload');
       if (!updated) throw new HttpError(409, 'Lead is already a client');
 

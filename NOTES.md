@@ -30,3 +30,14 @@ Limitation: it works with a single server instance. Several instances would need
 Optimistic UI with server correction; a version check in the client prevents stale updates from overwriting newer ones; the board refetches after a socket reconnect.
 Token is kept in localStorage (known XSS trade-off; httpOnly cookies would be safer).
 Limitations: native drag and drop doesn't work on touch screens; the list is capped at 200 leads with no pagination yet; the client and platform admin screens are placeholders.
+
+the client portal shows only the case stage and the client's own documents. The client sees document statuses; live updates arrive tomorrow with the background checker. The advisor's view of a lead's documents isn't in the UI yet (the API exists), and I'd add it in the lead detail panel. Limitation: the credential handover is manual (email invite is the next step).
+
+Converting a lead (clientService.js): it does three things inside one transaction, meaning all-or-nothing: link the lead to a new client id, bump the lead's version, and create the user. The key line is the filter clientUserId: null in the update. It only matches a lead that hasn't been converted, so if two advisors click at once, the database lets only one through and the other gets a 409. That answers my earlier question: that filter prevents double conversion.
+
+Uploading (upload.js, documentService.js): multer reads the uploaded file into memory and rejects wrong types and sizes. We then stream the bytes into GridFS (a file store inside MongoDB), and save a small Document record that holds the metadata, the status pending, and the id of the stored file. The route answers immediately, so the client isn't kept waiting.
+
+Downloading (downloadFile): the browser never gets a public link. Every download runs through a query that includes the brokerage, and for clients also their own user id, so someone else's document simply isn't found (404). That answers my other question: sending files through our own endpoint is how the permission check gets applied every time.
+
+React side (api.js, ClientPortal.jsx): FormData is the browser's way to package a file plus text fields. We send the token with each request, and for downloads we fetch the file with the token and then save it, because a normal link can't carry the login header.
+

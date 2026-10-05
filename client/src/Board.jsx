@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { api, API, getToken } from "./api.js";
+import { upsertDoc } from "./docs.js";
+import DocRow from "./docRow.jsx";
 
 const STAGES = ["new", "contacted", "qualified", "application", "won", "lost"];
 const LABELS = {
@@ -19,6 +21,9 @@ export default function Board({ user, onLogout }) {
   const [toast, setToast] = useState("");
   const [credentials, setCredentials] = useState(null);
   const toastTimer = useRef();
+  const [selected, setSelected] = useState(null); // id of the lead whose panel is open
+  const [docs, setDocs] = useState([]);
+  const selectedRef = useRef(null); // lets the socket handlers see the current selection
 
   const notify = (message) => {
     setToast(message);
@@ -54,15 +59,21 @@ export default function Board({ user, onLogout }) {
     load();
 
     const socket = io(API, { auth: { token: getToken() } });
-    socket.on("connect", () => setStatus("live"));
+    let firstConnect = true;
+    socket.on("connect", () => {
+      setStatus("live");
+      if (!firstConnect) {
+        load();
+        if (selectedRef.current) loadDocs(selectedRef.current);
+      }
+      firstConnect = false;
+    });
     socket.on("disconnect", () => setStatus("offline"));
     socket.on("connect_error", (err) => {
       setStatus("offline");
       if (err.message === "Not authenticated") onLogout();
     });
-    // After a dropped connection comes back, events sent in the gap are lost, so refetch
-    socket.io.on("reconnect", load);
-
+   
     socket.on("lead:created", ({ lead }) => {
       upsert(lead);
       notify(`New lead: ${lead.name}`);
@@ -76,6 +87,13 @@ export default function Board({ user, onLogout }) {
     });
 
     socket.on("lead:updated", ({ lead }) => upsert(lead)); // e.g. someone converted a lead
+
+    const onDoc = ({ document: d }) => {
+      if (d.leadId === selectedRef.current)
+        setDocs((prev) => upsertDoc(prev, d));
+    };
+    socket.on("document:created", onDoc);
+    socket.on("document:updated", onDoc);
 
     return () => socket.disconnect();
   }, [load, upsert, onLogout, user.id]);
@@ -117,6 +135,27 @@ export default function Board({ user, onLogout }) {
     } catch (err) {
       notify(err.message);
     }
+  };
+
+  const loadDocs = useCallback(async (leadId) => {
+    try {
+      const { documents } = await api(`/leads/${leadId}/documents`);
+      setDocs(documents);
+    } catch (err) {
+      notify(err.message);
+    }
+  }, []);
+
+  const openLead = (lead) => {
+    selectedRef.current = lead._id;
+    setSelected(lead._id);
+    setDocs([]);
+    if (lead.clientUserId) loadDocs(lead._id);
+  };
+
+  const closePanel = () => {
+    selectedRef.current = null;
+    setSelected(null);
   };
   if (loading) return <p className="empty">Loading...</p>;
 
@@ -160,6 +199,7 @@ export default function Board({ user, onLogout }) {
                   key={lead._id}
                   className="card"
                   draggable
+                  onClick={() => openLead(lead)}
                   onDragStart={(e) =>
                     e.dataTransfer.setData("text/plain", lead._id)
                   }
@@ -175,7 +215,7 @@ export default function Board({ user, onLogout }) {
                     <span className="badge client">Client</span>
                   ) : (
                     lead.email && (
-                      <button className="small" onClick={() => convert(lead)}>
+                      <button className="small" onClick={(e) => { e.stopPropagation(); convert(lead); }}>
                         Convert to client
                       </button>
                     )
@@ -186,6 +226,29 @@ export default function Board({ user, onLogout }) {
           );
         })}
       </div>
+
+      {selected && (() => {
+  const lead = leads.find((l) => l._id === selected);
+  if (!lead) return null;
+  const verified = docs.filter((d) => d.status === 'verified').length;
+  return (
+    <aside className="panel">
+      <button className="close" onClick={closePanel}>×</button>
+      <h3>{lead.name}</h3>
+      <p>{lead.email}<br />{lead.phone}</p>
+      <p>Stage: <strong>{LABELS[lead.stage]}</strong>{lead.clientUserId ? ' · Client' : ''}</p>
+      {!lead.clientUserId ? (
+        <p>Convert this lead to a client so they can upload documents.</p>
+      ) : (
+        <>
+          <h4>Documents: {verified} of {docs.length} verified</h4>
+          {docs.length === 0 && <p>No documents uploaded yet.</p>}
+          {docs.map((d) => <DocRow key={d._id} doc={d} onError={notify} />)}
+        </>
+      )}
+    </aside>
+  );
+})()}
     </>
   );
 }

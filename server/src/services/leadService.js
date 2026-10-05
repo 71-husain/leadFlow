@@ -48,7 +48,7 @@ export const moveLeadStage = async (
   const updated = await Lead.findOneAndUpdate(
     { _id: id, brokerageId, version },
     { $set: { stage }, $inc: { version: 1 } },
-    { new: true },
+    { returnDocument: 'after' },
   ).select("-rawPayload");
 
   // if updated then broadcast it to live

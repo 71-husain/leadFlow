@@ -16,6 +16,8 @@ import http from "node:http";
 import { initSocket } from "./sockets/index.js";
 import portalRoutes from "./routes/portalRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
+import { startDocumentWorker } from './queues/documentWorker.js';
+import { startRecoverySweep } from './queues/recoverySweep.js';
 
 const app = express();
 
@@ -65,11 +67,19 @@ app.use((err, req, res, next) => {
 const start = async () => {
   await mongoose.connect(process.env.MONGO_URI);
   console.log("MongoDB connected");
+  
   const httpServer = http.createServer(app);
+
   initSocket(httpServer);
+
   httpServer.listen(process.env.PORT, () =>
     console.log(`Server running on port ${process.env.PORT}`),
   );
+
+  if (process.env.REDIS_URL && process.env.RUN_WORKER !== 'false') {
+  startDocumentWorker();
+  startRecoverySweep();
+}
 };
 
 start().catch((err) => {
