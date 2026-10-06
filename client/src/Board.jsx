@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { api, API, getToken } from "./api.js";
 import { upsertDoc } from "./docs.js";
-import DocRow from "./docRow.jsx";
+import DocRow from "./DocRow.jsx";
 import { STAGES , LABELS } from "./constants.js";
 import Dashboard from './Dashboard.jsx';
 

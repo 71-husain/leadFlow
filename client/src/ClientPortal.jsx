@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { api, API, getToken } from "./api.js";
 import { upsertDoc } from "./docs.js";
-import DocRow from "./docRow.jsx";
+import DocRow from "./DocRow.jsx";
 
 const TYPES = [
   ["payslip", "Payslip"],
