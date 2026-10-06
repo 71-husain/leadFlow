@@ -47,3 +47,8 @@ document status changes are pushed live to the owning client and to the brokerag
 The dashboard is computed with a single $facet aggregation per brokerage, and cached in Redis under a per-brokerage version number. Every change (lead created or moved, conversion, document upload or status change) bumps the version and pushes a dashboard:changed event, so cached data is never served after a change. A 60-second expiry is a safety net, and Redis failures fall back to computing directly.
 Aggregations bypass the tenant guard, so each starts with an explicit $match on brokerageId.
 Not built: email templates, email triggers, task triggers (left out to prioritize isolation, real-time behavior, documents and resilience).
+
+Deployed as a single Render web service (API, Socket.IO and queue worker in one process), because the worker needs the Socket.IO server to push live updates, and the free tier gives one service. At larger scale, I'd split the worker out and add the Socket.IO Redis adapter.
+Production uses its own JWT_SECRET. CORS is restricted through CLIENT_URL. trust proxy is set so rate limits use real client addresses.
+Free-tier limitation: the server sleeps after 15 minutes idle, so the first request is slow, and background checks only run while awake.
+Development and production share one Atlas database for this assignment. In a real product they'd be separate.
