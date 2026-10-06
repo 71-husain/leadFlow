@@ -15,7 +15,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={notify}>
       {children}
-      {message && <div className="toast">{message}</div>}
+      {message && <div className="toast fixed bottom-5 right-5 z-50 max-w-sm rounded-lg bg-slate-900 px-4 py-3 text-sm text-white shadow-lg">{message}</div>}
     </ToastContext.Provider>
   );
 }

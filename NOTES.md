@@ -52,3 +52,14 @@ Deployed as a single Render web service (API, Socket.IO and queue worker in one 
 Production uses its own JWT_SECRET. CORS is restricted through CLIENT_URL. trust proxy is set so rate limits use real client addresses.
 Free-tier limitation: the server sleeps after 15 minutes idle, so the first request is slow, and background checks only run while awake.
 Development and production share one Atlas database for this assignment. In a real product they'd be separate.
+
+Frontend is organized by feature (features/board, portal, dashboard, auth), with app-wide concerns in contexts (auth, one shared socket connection, toasts) and shared UI in components.
+Routing uses React Router: the lead panel is a child route (/board/leads/:id), so Back, refresh and deep links work. Role guards redirect users to their own area, which is a UX convenience only. The server enforces real authorization.
+One socket connection for the whole app; screens subscribe to events and refetch after reconnects. A 401 from any request logs the user out centrally.
+Not done: tests for the frontend, lead pagination, accessible drag and drop (native drag and drop doesn't work on touch).
+
+Tailwind with a small component set (Button, Spinner, DocRow) keeps the look consistent without a large stylesheet. The few repeated pieces live in one file each.
+A color per stage (shared in STAGE_ACCENT) means the board and the dashboard match, so users learn the colors once.
+Feedback at every step: a highlighted column while dragging, a pulsing "Checking…" pill, a progress bar of verified documents, loading spinners, and friendly empty states instead of blank screens.
+The drawer closes with the backdrop, the X, Esc or the Back button, since it's a real route.
+Responsive: the board scrolls sideways on narrow screens, the drawer becomes full width, and the header wraps.

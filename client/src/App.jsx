@@ -18,7 +18,11 @@ function HomeRedirect() {
   return <Navigate to={target} replace />;
 }
 
-const NotBuilt = () => <p className="empty">The platform admin area is not built yet (brokerages are created with a seed script).</p>;
+const NotBuilt = () => (
+  <p className="rounded-xl bg-white p-6 text-slate-600 shadow-sm ring-1 ring-slate-200">
+    The platform admin area is not built yet (brokerages are created with a seed script).
+  </p>
+);
 
 export default function App() {
   return (

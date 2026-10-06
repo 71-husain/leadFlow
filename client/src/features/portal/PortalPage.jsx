@@ -3,6 +3,9 @@ import { api } from '../../api/client.js';
 import { useSocket } from '../../context/SocketContext.jsx';
 import { upsertDoc } from '../../lib/docs.js';
 import DocRow from '../../components/DocRow.jsx';
+import Button from '../../components/Button.jsx';
+import Spinner from '../../components/Spinner.jsx';
+import { LABELS } from '../../lib/constants.js';
 
 const TYPES = [
   ['payslip', 'Payslip'],
@@ -65,25 +68,53 @@ export default function PortalPage() {
     }
   };
 
-  if (!data) return <p className="empty">{message || 'Loading...'}</p>;
+  if (!data) return message ? <p className="text-sm text-rose-700">{message}</p> : <Spinner />;
 
-  return (
-    <div className="portal">
-      <h2>Hello, {data.lead.name}</h2>
-      <p>Your case is currently at: <strong>{data.lead.stage}</strong></p>
+return (
+  <div className="mx-auto max-w-2xl space-y-6">
+    <div>
+      <h1 className="text-xl font-semibold tracking-tight">Hello, {data.lead.name}</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Your case is currently at{' '}
+        <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700">
+          {LABELS[data.lead.stage]}
+        </span>
+      </p>
+    </div>
 
-      <form className="upload" onSubmit={submit}>
-        <select value={type} onChange={(e) => setType(e.target.value)}>
+    <form onSubmit={submit} className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <h2 className="mb-3 text-sm font-semibold text-slate-700">Upload a document</h2>
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        >
           {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setFile(e.target.files[0] || null)} />
-        <button disabled={busy}>{busy ? 'Uploading...' : 'Upload'}</button>
-      </form>
-      {message && <p className="note">{message}</p>}
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={(e) => setFile(e.target.files[0] || null)}
+          className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+        />
+        <Button disabled={busy}>{busy ? 'Uploading...' : 'Upload'}</Button>
+      </div>
+      <p className="mt-2 text-xs text-slate-400">PDF, JPG or PNG, up to 5 MB.</p>
+      {message && <p className="mt-3 text-sm text-slate-600">{message}</p>}
+    </form>
 
-      <h3>Your documents ({data.documents.length})</h3>
-      {data.documents.length === 0 && <p>No documents yet.</p>}
-      {data.documents.map((d) => <DocRow key={d._id} doc={d} onError={setMessage} />)}
+    <div>
+      <h2 className="mb-3 text-sm font-semibold text-slate-700">Your documents ({data.documents.length})</h2>
+      {data.documents.length === 0 && (
+        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+          No documents yet. Upload your first one above.
+        </p>
+      )}
+      <div className="space-y-2">
+        {data.documents.map((d) => <DocRow key={d._id} doc={d} onError={setMessage} />)}
+      </div>
     </div>
-  );
+  </div>
+);
 }
