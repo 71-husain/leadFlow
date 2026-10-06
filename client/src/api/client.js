@@ -1,19 +1,10 @@
-export const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getToken } from '../lib/session.js';
 
-export const getToken = () => localStorage.getItem('token');
-export const getUser = () => JSON.parse(localStorage.getItem('user') || 'null');
-export const setSession = (token, user) => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(user));
-};
-export const clearSession = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-};
+export const API = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 export async function api(path, { method = 'GET', body } = {}) {
   const token = getToken();
-  const isForm = body instanceof FormData; // file uploads must NOT be sent as JSON
+  const isForm = body instanceof FormData;
   const res = await fetch(`${API}/api${path}`, {
     method,
     headers: {
@@ -23,6 +14,12 @@ export async function api(path, { method = 'GET', body } = {}) {
     body: isForm ? body : body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
+
+  // An expired or invalid session anywhere in the app logs the user out (handled in AuthContext)
+  if (res.status === 401 && !path.startsWith('/auth/login')) {
+    window.dispatchEvent(new Event('auth:expired'));
+  }
+
   if (!res.ok) {
     const err = new Error(data.message || 'Request failed');
     err.status = res.status;
@@ -32,7 +29,6 @@ export async function api(path, { method = 'GET', body } = {}) {
   return data;
 }
 
-// Files need the login token, so we can't use a plain link. Fetch it, then save it.
 export async function downloadFile(docId, filename) {
   const res = await fetch(`${API}/api/documents/${docId}/file`, {
     headers: { Authorization: `Bearer ${getToken()}` },

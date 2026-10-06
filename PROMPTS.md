@@ -134,3 +134,30 @@ POST /api/webhooks/tally/alpha 201 1924.558 ms - 52
 33. api answer upload before the check happens so that client should have knew that the upload successfull and now checking will start  , actually mongodb is the actuall source of truth so only committed data are stored in the mongodb and cached data are stored in the redis
 
 tested all the test cases and they passed but want to ask some questions from you as i only focused on backend part to understood and just copied and pasted the code for frontend so i need to study or understand each code file and work flow after completing it and also the frontend code is looking just messy i mean it is like someone who never know about react have written that codes and maintained i mean no folders directly each code in files in source and also no routing so if someonne moved deep in the page cant back to the early pages aswell so we need to fixed that aswell and also frontend styling is worst among all the projects that i have worked yet so what will we do and as its 5th october 7 pm so if wee complete the dashboard part today then will all of the required work will completed and we need to just deploy it if yes then tomorrow i will completely focus on frontend part where will write an good frontend code with good visual effect and with proper folder structures of projects then will deploy on oct 7 and submit it , whats your take on it and if want to give any suggestion then you can
+
+well its already 11 am on 6th october so let complete the deployement then we will create branch of our main branch leadflow and will update the frontend so if something went wrong we could return to the older version and let complete deployment asap so give the steps to host backend on render
+
+well it deployed correctly and all tests works but in logs i can see some error related to redis url , IMPORTANT! Eviction policy is volatile-lru. It should be "noeviction"
+GET /api/health 200 0.330 ms - 15
+Redis error: connect ETIMEDOUT
+Worker error: connect ETIMEDOUT
+GET /api/health 200 0.252 ms - 15
+GET /api/health 200 0.262 ms - 15
+GET /api/health 200 0.314 ms - 15
+IMPORTANT! Eviction policy is volatile-lru. It should be "noeviction"
+GET /api/health 200 0.239 ms - 15
+GET /api/health 200 0.273 ms - 15
+GET /api/health 200 0.340 ms - 15
+GET /api/health 200 0.318 ms - 15
+GET /api/health 200 0.234 ms - 15
+GET /api/health 200 0.202 ms - 15
+GET /api/health 200 0.186 ms - 15
+GET /api/health 200 0.214 ms - 15
+GET /api/health 200 0.236 ms - 15
+GET / 404 0.387 ms - 139
+GET /api/health 200 0.189 ms - 15
+
+deployed on vercel and render and also added client url to render environment variable but now when i am sending request from deployed vercel link then the request is failing and while sending the same request using postman then it succeeds
+
+
+well i identified the bug and solved it and actually it was a cors error where frontend api were including extra slash in api environemnt so fixed that and now everything is working perfectly so now i have working project that i can submit tomorrow so now i will just improve my frontend then will submit it 

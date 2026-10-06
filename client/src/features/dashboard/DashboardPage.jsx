@@ -1,26 +1,35 @@
-import { useEffect, useState } from 'react';
-import { api } from './api.js';
-import { STAGES, LABELS } from './constants.js';
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '../../api/client.js';
+import { useSocket } from '../../context/SocketContext.jsx';
+import { STAGES, LABELS } from '../../lib/constants.js';
 
-export default function Dashboard({ tick }) {
+export default function DashboardPage() {
+  const { socket, reconnects } = useSocket();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
+  const load = useCallback(async () => {
+    try {
+      setData(await api('/dashboard'));
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load, reconnects]);
+
   useEffect(() => {
-    // The delay means a burst of events causes only ONE refetch
-    const timer = setTimeout(async () => {
-      try {
-        setData(await api('/dashboard'));
-        setError('');
-      } catch (err) {
-        setError(err.message);
-      }
-    }, tick === 0 ? 0 : 300);
-    return () => clearTimeout(timer);
-  }, [tick]);
+    if (!socket) return;
+    let timer;
+    // A burst of changes causes ONE refetch, 300 ms after the last one
+    const onChange = () => { clearTimeout(timer); timer = setTimeout(load, 300); };
+    socket.on('dashboard:changed', onChange);
+    return () => { clearTimeout(timer); socket.off('dashboard:changed', onChange); };
+  }, [socket, load]);
 
   if (error) return <p className="empty">{error}</p>;
-  if (!data) return null;
+  if (!data) return <p className="empty">Loading...</p>;
 
   const max = Math.max(1, ...Object.values(data.byStage));
   const tiles = [

@@ -57,3 +57,10 @@ button.small { margin-top: 6px; padding: 4px 8px; font-size: 12px; }
 .bar div { background: #3b82f6; height: 100%; border-radius: 4px; transition: width .3s; }
 .doc-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
 .doc-summary small { color: #777; margin-left: auto; }
+
+header nav { display: flex; gap: 12px; }
+header nav a { text-decoration: none; color: #555; padding: 4px 8px; border-radius: 6px; }
+header nav a.active { background: #e9ebef; color: #111; font-weight: 600; }
+header .who { display: flex; align-items: center; gap: 6px; }
+main { padding-top: 12px; }
+.demo { display: grid; gap: 6px; margin-top: 12px; }

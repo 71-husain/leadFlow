@@ -1,4 +1,4 @@
-import { downloadFile } from './api.js';
+import { downloadFile } from '../api/client.js';
 
 const LABELS = { pending: 'Waiting', checking: 'Checking…', verified: 'Verified', failed: 'Failed' };
 
