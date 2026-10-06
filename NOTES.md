@@ -43,3 +43,7 @@ React side (api.js, ClientPortal.jsx): FormData is the browser's way to package 
 
 
 document status changes are pushed live to the owning client and to the brokerage's staff only. Out-of-order events are ignored using updatedAt, and the screens refetch on reconnect. Redis Cloud's eviction policy is volatile-lru (BullMQ recommends noeviction); the recovery sweep limits the impact. Known limitation: no pagination of documents in the panel.
+
+The dashboard is computed with a single $facet aggregation per brokerage, and cached in Redis under a per-brokerage version number. Every change (lead created or moved, conversion, document upload or status change) bumps the version and pushes a dashboard:changed event, so cached data is never served after a change. A 60-second expiry is a safety net, and Redis failures fall back to computing directly.
+Aggregations bypass the tenant guard, so each starts with an explicit $match on brokerageId.
+Not built: email templates, email triggers, task triggers (left out to prioritize isolation, real-time behavior, documents and resilience).

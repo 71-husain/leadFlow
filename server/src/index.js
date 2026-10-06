@@ -22,9 +22,11 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const app = express();
 
+app.set('trust proxy', 1); // we sit behind Render proxy
+
 //middlewares
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : true }));
 app.use(morgan("dev"));
 app.use(
   express.json({

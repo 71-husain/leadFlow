@@ -6,10 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
     "seed": "node src/seed.js",
     "send:lead": "node src/scripts/sendTestLead.js",
     "listen": "node src/scripts/listenSocket.js"
   },
+  "engines": { "node": ">=20" },
   "keywords": [],
   "author": "",
   "license": "ISC",

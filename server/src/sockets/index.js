@@ -6,7 +6,7 @@ let io;
 
 export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
-    cors: { origin: process.env.CLIENT_URL || '*' },
+    cors: { origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : '*' },
   });
 
   // Runs once per connection attempt: reject anyone without a valid token
