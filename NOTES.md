@@ -1,65 +1,116 @@
-Design decision: a duplicate is flagged, not rejected (duplicateOf points to the earlier lead). An advisor should see "this person already contacted us" instead of silently losing the new enquiry. Later we can also check clients.
 
-2. webhookController : This is a Tally webhook controller that receives lead submissions. First it identifies the active brokerage and verifies Tally's HMAC signature using the brokerage-specific secret. Then it filters the event type, extracts and validates the lead information, normalizes the phone number, and checks whether the person already exists. It creates the lead while marking any existing person as a duplicate instead of rejecting it. Finally, a unique database constraint protects against duplicate webhook deliveries, and a duplicate-key error is acknowledged safely
+# LeadFlow: design notes
 
-3. idempotency via a unique index (race-safe), duplicates are flagged and not rejected, and the webhook rate limit is per brokerage.
+Decisions, trade-offs and known limitations. See README.md for setup and test logins, and PROMPTS.md for every AI prompt.
 
-4. Tenant isolation: brokerageId comes from the verified token, and a Mongoose plugin rejects unscoped queries. Limitation: aggregations aren't covered, so they must begin with $match.
-Auth: JWT, with the user re-loaded each request so deactivation is instant. Trade-off: one DB read per request.
-Webhooks: HMAC signature check on the raw body. Idempotency through a unique index on (brokerage, source, externalId).
-Duplicate people are flagged (duplicateOf), not rejected. Matching uses email or normalized phone. Limitation: exact matching only, so no fuzzy name matching.
-Webhook rate limit is per brokerage.
-Platform admin is a seed script, not a UI.
+## 1. Scope
 
-5. stage moves use optimistic concurrency (a version field with an atomic conditional update). A conflicting move returns 409 plus the current lead so the UI can refresh. Chosen over locking because it needs no waiting and works with several servers. Another brokerage's lead id returns 404, not 403, so its existence isn't revealed.
+**Built (core):** multi-tenant isolation, authentication and roles, lead intake from a real tool (Tally webhook), live pipeline board, duplicate-person detection, lead-to-client conversion, client portal with uploads, background document checks with live status, dashboard.
 
-6. Tally is the lead source (free signed webhooks). Each brokerage has its own endpoint and secret, verified with HMAC. Limitation: only Tally is supported. Tested with a local tunnel; on deployment the tunnel isn't needed.
+**Deliberately not built:** email templates, email triggers on stages, task triggers on columns (requirements 8 to 10); platform admin UI; staff invitations. Reason: the brief rewards a smaller product that works well, so I put the time into isolation, real-time behavior, the document pipeline and resilience. The three automation features would plug into `moveLeadStage` and reuse the same BullMQ queue.
 
-7. Business decisions in c) and d):
+## 2. Architecture
 
-We broadcast only after the database write succeeds. If we announced first and the save failed, every screen would show something that never happened.
-movedBy is included because the brief complains that advisors "cannot see who is handling what". Now every screen can show "Ravi moved Anna to Contacted".
-The mover's own screen gets the event too. That's fine, because applying the same update twice does nothing harmful, and it keeps all screens consistent with one rule.
-No rawPayload in broadcasts, since it holds the form's raw data and nobody needs it on the board.
+React (Vite, Tailwind, React Router) on Vercel talks over REST and Socket.IO to a single Express process on Render. That process runs the API, the Socket.IO server and the BullMQ worker. Data lives in MongoDB Atlas (documents, users, leads, and uploaded files in GridFS). Redis Cloud holds BullMQ jobs and the dashboard cache.
 
-8. Live updates use Socket.IO. JWT is verified at connection, and rooms are assigned by the server (brokerage:<id>), so a client cannot join a room of another brokerage.
-Events are broadcast only after the database write succeeds. The database is the source of truth; clients refetch on reconnect, so missed events are recovered.
-Limitation: it works with a single server instance. Several instances would need the Socket.IO Redis adapter, which I'd add if scaling. The JWT is checked at connect time only.
+Request path: route -> middleware (authenticate, authorize) -> controller (validates input) -> service (business rules, live events) -> model.
 
-9. Frontend is React (Vite) with no router or UI library, to keep it small. Native HTML5 drag and drop is used.
-Optimistic UI with server correction; a version check in the client prevents stale updates from overwriting newer ones; the board refetches after a socket reconnect.
-Token is kept in localStorage (known XSS trade-off; httpOnly cookies would be safer).
-Limitations: native drag and drop doesn't work on touch screens; the list is capped at 200 leads with no pagination yet; the client and platform admin screens are placeholders.
+Why one process: the worker must reach the Socket.IO server to push live status, and the free tier offers one service. At scale: split the worker out and add the Socket.IO Redis adapter.
 
-the client portal shows only the case stage and the client's own documents. The client sees document statuses; live updates arrive tomorrow with the background checker. The advisor's view of a lead's documents isn't in the UI yet (the API exists), and I'd add it in the lead detail panel. Limitation: the credential handover is manual (email invite is the next step).
+## 3. Roles
 
-Converting a lead (clientService.js): it does three things inside one transaction, meaning all-or-nothing: link the lead to a new client id, bump the lead's version, and create the user. The key line is the filter clientUserId: null in the update. It only matches a lead that hasn't been converted, so if two advisors click at once, the database lets only one through and the other gets a 409. That answers my earlier question: that filter prevents double conversion.
+- Platform admin: can log in; no UI yet (brokerages are created by the seed script).
+- Brokerage admin and advisor: currently identical (board, convert, documents, dashboard). Admin-only features (users, templates, triggers) were the cut features.
+- Client: only their own case and documents.
 
-Uploading (upload.js, documentService.js): multer reads the uploaded file into memory and rejects wrong types and sizes. We then stream the bytes into GridFS (a file store inside MongoDB), and save a small Document record that holds the metadata, the status pending, and the id of the stored file. The route answers immediately, so the client isn't kept waiting.
+## 4. Decisions by area
 
-Downloading (downloadFile): the browser never gets a public link. Every download runs through a query that includes the brokerage, and for clients also their own user id, so someone else's document simply isn't found (404). That answers my other question: sending files through our own endpoint is how the permission check gets applied every time.
+### Authentication
+- JWT with id, role and brokerageId. The user is reloaded from the database on every request, so deactivation is immediate (cost: one read per request).
+- Same error for unknown email and wrong password. Login rate-limited. Passwords hashed with bcrypt and never selected by default.
+- Token kept in localStorage for simplicity (XSS trade-off; httpOnly cookies would be safer).
 
-React side (api.js, ClientPortal.jsx): FormData is the browser's way to package a file plus text fields. We send the token with each request, and for downloads we fetch the file with the token and then save it, because a normal link can't carry the login header.
+### Tenant isolation
+- brokerageId always comes from the verified token, never from the request.
+- Every query is scoped by brokerageId. A Mongoose plugin (`utils/tenantPlugin.js`) rejects any query without it, so a forgotten filter fails loudly.
+- Another brokerage's id returns 404, not 403, so its existence is not revealed.
+- Aggregations bypass the plugin, so each starts with an explicit `$match` and an ObjectId cast.
+- Socket rooms are assigned by the server from the verified token; there is no client-controlled join.
+- One shared database (simple, cheap) means shared capacity.
 
+### Lead intake (Tally webhook)
+- HMAC-SHA256 signature checked on the raw request body with a per-brokerage secret and a timing-safe compare. Unknown brokerage and bad signature both return 401.
+- Idempotency: unique index on (brokerage, source, externalId). A repeated delivery returns 200 instead of creating a duplicate or triggering endless retries. A database index is used instead of check-then-insert because simultaneous requests can both pass a check.
+- Rate limit is keyed per brokerage, so one brokerage flooding does not consume another's allowance.
+- Limitation: only Tally; fields are found by label keywords.
 
-document status changes are pushed live to the owning client and to the brokerage's staff only. Out-of-order events are ignored using updatedAt, and the screens refetch on reconnect. Redis Cloud's eviction policy is volatile-lru (BullMQ recommends noeviction); the recovery sweep limits the impact. Known limitation: no pagination of documents in the panel.
+### Duplicate detection
+- Same brokerage, same email or normalized phone. The new lead is flagged (`duplicateOf`), not rejected, because a repeat enquiry is a buying signal.
+- Limitation: exact matching only, leads only (clients are not checked), and two simultaneous new leads could miss each other.
 
-The dashboard is computed with a single $facet aggregation per brokerage, and cached in Redis under a per-brokerage version number. Every change (lead created or moved, conversion, document upload or status change) bumps the version and pushes a dashboard:changed event, so cached data is never served after a change. A 60-second expiry is a safety net, and Redis failures fall back to computing directly.
-Aggregations bypass the tenant guard, so each starts with an explicit $match on brokerageId.
-Not built: email templates, email triggers, task triggers (left out to prioritize isolation, real-time behavior, documents and resilience).
+### Pipeline and concurrency
+- Optimistic concurrency: each lead has a version; a move is one atomic update filtered on the expected version. Exactly one of two simultaneous moves wins, and the other gets 409 with the current lead so the UI corrects itself.
+- Chosen over locks: no waiting, no stuck locks, works across servers.
+- Events are broadcast only after the database write succeeds. Events include who moved the lead.
+- [verify] Tested with a script that fires two simultaneous moves with the same version (`npm run test:race`) and with a stale screen in the browser.
 
-Deployed as a single Render web service (API, Socket.IO and queue worker in one process), because the worker needs the Socket.IO server to push live updates, and the free tier gives one service. At larger scale, I'd split the worker out and add the Socket.IO Redis adapter.
-Production uses its own JWT_SECRET. CORS is restricted through CLIENT_URL. trust proxy is set so rate limits use real client addresses.
-Free-tier limitation: the server sleeps after 15 minutes idle, so the first request is slow, and background checks only run while awake.
-Development and production share one Atlas database for this assignment. In a real product they'd be separate.
+### Real time (Socket.IO)
+- Database is the source of truth; sockets are notifications. Missed events are never replayed, so every screen refetches after a reconnect, and stale events are ignored using version or updatedAt.
+- One shared connection for the whole frontend.
+- Limitations: single instance; token verified at connect time only; no touch-screen drag and drop.
 
-Frontend is organized by feature (features/board, portal, dashboard, auth), with app-wide concerns in contexts (auth, one shared socket connection, toasts) and shared UI in components.
-Routing uses React Router: the lead panel is a child route (/board/leads/:id), so Back, refresh and deep links work. Role guards redirect users to their own area, which is a UX convenience only. The server enforces real authorization.
-One socket connection for the whole app; screens subscribe to events and refetch after reconnects. A 401 from any request logs the user out centrally.
-Not done: tests for the frontend, lead pagination, accessible drag and drop (native drag and drop doesn't work on touch).
+### Lead to client
+- A client is a User (role client) linked from the lead through `clientUserId`; the lead is the case.
+- Conversion runs in a transaction and claims the lead atomically (filter `clientUserId: null`), so two advisors cannot both convert it.
+- A temporary password is shown once and stored only as a hash. Limitation: a real product would send an email invite link.
+- Clients see only name, stage and their own documents.
 
-Tailwind with a small component set (Button, Spinner, DocRow) keeps the look consistent without a large stylesheet. The few repeated pieces live in one file each.
-A color per stage (shared in STAGE_ACCENT) means the board and the dashboard match, so users learn the colors once.
-Feedback at every step: a highlighted column while dragging, a pulsing "Checking…" pill, a progress bar of verified documents, loading spinners, and friendly empty states instead of blank screens.
-The drawer closes with the backdrop, the X, Esc or the Back button, since it's a real route.
-Responsive: the board scrolls sideways on narrow screens, the drawer becomes full width, and the header wraps.
+### Documents and storage
+- Files stored in MongoDB GridFS behind a two-function storage module (`saveFile`, `openDownload`); S3 or R2 would be a one-file swap. Chosen for privacy (no public URLs), no extra account and persistence.
+- Downloads always pass a permission check (brokerage for staff, brokerage and owner for clients) and are served as attachments with nosniff.
+- Limits: 5 MB, PDF/JPG/PNG, 50 documents per case, upload rate limit per user.
+- Limitations: file type trusted from the browser; no virus scanning; uses database space.
+
+### Background checks (BullMQ and Redis)
+- Upload saves the file and a `pending` record and returns immediately; a job holding only ids is queued (job id = document id, so duplicates are ignored).
+- Worker (concurrency 3): marks `checking`, waits 5 to 15 seconds, fails about 30% of the time. BullMQ retries up to 3 times with exponential backoff; between retries the document shows as waiting with its reason, and after the last attempt it becomes `failed`.
+- Jobs are idempotent (at-least-once delivery), and a crashed worker's job is re-delivered by BullMQ.
+- Redis is not the source of truth: a recovery sweep every minute re-queues documents stuck in `pending`, and an upload succeeds even if Redis is down.
+- [verify] Tested: failure and retry path, killing the server mid-check, and a wrong Redis URL during an upload.
+- Limitations: documents stuck in `checking` with no job are not swept (fix: also sweep old `checking` documents); one shared queue is not perfectly fair between brokerages; the free server sleeps, so checks run only while it is awake; Redis free tier uses `volatile-lru` instead of the recommended `noeviction`.
+
+### Dashboard
+- One `$facet` aggregation per brokerage, cached in Redis under a per-brokerage version number. Any change bumps the version (so old copies are unreachable) and pushes a `dashboard:changed` event; open dashboards refetch, debounced.
+- Versioning instead of deleting the cache avoids a race where a slow computation writes old data after invalidation.
+- Fail-open: if Redis is slow or down, numbers are computed from MongoDB. A 60-second expiry is only a safety net for a lost version bump.
+
+### Frontend
+- Organized by feature, with contexts for auth, the shared socket and toasts. React Router with role-guarded routes; the lead panel is a child route so Back, refresh and deep links work. Role redirects are UX only; the server enforces authorization.
+- Tailwind v4 with a small set of shared components; one accent color per pipeline stage.
+- Optimistic board updates with server correction on a 409.
+
+### Deployment
+- Vercel (frontend), Render (API and worker), Atlas, Redis Cloud. Production uses its own JWT secret. CORS is restricted by an allow-list (`CLIENT_URL`) for both REST and Socket.IO. Trust proxy is enabled so rate limits see real client addresses.
+- Dev and production share one Atlas database for this assignment.
+- Limitation: free instance sleeps after 15 minutes idle (slow first request).
+
+## 5. Answers to the brief's questions
+
+| Question | Answer |
+|---|---|
+| Same lead twice, or a burst | Unique index, 200 on repeats, per-brokerage rate limit |
+| Two advisors move one lead | Versioned atomic update; loser gets 409 and the board corrects itself |
+| Worker crashes mid-job | BullMQ re-delivers; idempotent job; recovery sweep |
+| Email provider down | Not built; would be a queued job with retries and backoff |
+| One brokerage floods | Per-brokerage and per-user limits, capped concurrency (shared queue not perfectly fair) |
+| Guessed id of another brokerage's lead | Scoped queries plus the tenant plugin return 404 |
+| Advisor offline for two minutes | Socket reconnects and the client refetches from the database |
+
+## 6. Known gaps and what I would do next
+
+1. Email templates, email triggers and task triggers (plug into `moveLeadStage`, reuse the queue).
+2. Staff invitations by email; client invite links instead of temporary passwords; a platform admin UI.
+3. Automated tests (unit and integration), and more checking beyond manual scripts.
+4. Split the worker from the API and add the Socket.IO Redis adapter; per-brokerage queues; sweep stuck `checking` documents.
+5. Pagination, search and filters on leads; touch-friendly drag and drop; accessibility pass.
+6. Magic-byte file validation and virus scanning; httpOnly cookie sessions.
